@@ -3,8 +3,8 @@ import { getFlightByConfirmationNumber } from "../controllers/flights.controller
 
 const flightsRouter = Router();
 
-flightsRouter.get(
-  "/:confirmation_number",
+flightsRouter.post(
+  "/book",
   getFlightByConfirmationNumber,
 );
 
