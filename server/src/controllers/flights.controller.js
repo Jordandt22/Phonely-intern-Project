@@ -1,10 +1,12 @@
 export const getFlightByConfirmationNumber = async (req, res) => {
-  const { confirmation_number } = req.params;
+  const { caller_airport } = req.body;
+
+  console.log(caller_airport);
 
   res.status(200).json({
-    message: "Flight found",
+    message: "Flight booked successfully",
     data: {
-      confirmation_number,
+      caller_airport,
     },
   });
 };
