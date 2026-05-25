@@ -70,6 +70,7 @@ export const getFlightsController = async (req, res) => {
     dst: data?.dst,
     date: data?.date,
     flights: flightsWithMessage,
+    flights_phonely_message: flightsWithMessage.map((flight) => flight.message).join(" | "),
     total_flights: flightsData.length,
   }));
 };
