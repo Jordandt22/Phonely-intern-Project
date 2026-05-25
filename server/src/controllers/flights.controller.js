@@ -33,6 +33,14 @@ const parseTravelDate = (travelDateInput) => {
   return DateTime.fromJSDate(fallbackDate).startOf("day");
 };
 
+const formatTime = (time) => {
+  return DateTime.fromISO(time).toUTC().toFormat("h:mm a ZZZZ");
+};
+
+const formatPrice = (price) => {
+  return `$${Number(price).toFixed(2)}`;
+};
+
 export const getFlightsController = async (req, res) => {
   const { departure_city, destination_city, travel_date } = req.query;
 
@@ -66,13 +74,13 @@ export const getFlightsController = async (req, res) => {
 
   // Add Message to each flight for Phonely
   const flightsWithMessage = flightsData.map((flight, index) => {
-    const departureTime = DateTime.fromISO(flight.departureTime).toLocal().toFormat("h:mm a ZZZZ");
-    const arrivalTime = DateTime.fromISO(flight.arrivalTime).toLocal().toFormat("h:mm a ZZZZ");
+    const departureTime = formatTime(flight.departureTime);
+    const arrivalTime = formatTime(flight.arrivalTime);
     const optionNumber = index + 1;
     return ({
       ...flight,
       option_number: optionNumber,
-      message: `Option ${optionNumber}: Flight Number: ${flight.flightNumber}, Departure: ${departureTime}, Arrival: ${arrivalTime}, Airline: ${flight.airline}, Price: $${flight.price}`,
+      message: `Option ${optionNumber}: Flight Number: ${flight.flightNumber}, Departure: ${departureTime}, Arrival: ${arrivalTime}, Airline: ${flight.airline}, Price: ${formatPrice(flight.price)}`,
     })
   });
 
@@ -124,6 +132,11 @@ export const bookFlightController = async (req, res) => {
   return res.status(200).json(successHandler({
     message: `Here is your confirmation number: ${confirmationNumber}. A copy will be sent to your email or phone number.`,
     confirmation_number: confirmationNumber,
-    selected_flight: flight,
+    selected_flight: {
+      ...flight,
+      departureTime: formatTime(flight.departureTime),
+      arrivalTime: formatTime(flight.arrivalTime),
+      price: formatPrice(flight.price),
+    },
   }));
-}
+};
