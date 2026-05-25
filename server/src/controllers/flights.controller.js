@@ -7,13 +7,9 @@ const parseTravelDate = (travelDateInput) => {
   if (!text) return null;
 
   const parseAttempts = [
-    DateTime.fromISO(text),
-    DateTime.fromFormat(text, "dd/MM/yyyy"),
-    DateTime.fromFormat(text, "yyyy-MM-dd"),
     DateTime.fromFormat(text, "MM/dd/yyyy"),
+    DateTime.fromFormat(text, "dd/MM/yyyy"),
     DateTime.fromFormat(text, "M/d/yyyy"),
-    DateTime.fromFormat(text, "MMMM d, yyyy"),
-    DateTime.fromFormat(text, "MMM d, yyyy"),
   ];
 
   const matchedDate = parseAttempts.find((date) => date.isValid);
