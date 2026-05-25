@@ -122,7 +122,7 @@ export const bookFlightController = async (req, res) => {
   }
 
   // Check if flight number is valid
-  const flight = cachedData?.data?.find((flight) => flight?.option_number === option_number);
+  const flight = cachedData?.data?.find((flight) => Number(flight?.option_number) === Number(option_number));
   if (!flight) {
     return res.status(404).json(customErrorHandler(INVALID_FLIGHT_NUMBER, "Sorry, the option number you provided is not valid."));
   }
