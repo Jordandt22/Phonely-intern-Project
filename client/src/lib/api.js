@@ -1,5 +1,4 @@
-const API_URL = process.env.API_URL ?? "http://localhost:8000";
-const API_VERSION = process.env.API_VERSION ?? "1";
+const API_URL = process.env.API_URL ?? "http://localhost:8000/v1/api";
 
 export async function getBookedFlight(confirmationNumber) {
   const normalized = confirmationNumber
@@ -9,7 +8,7 @@ export async function getBookedFlight(confirmationNumber) {
 
   try {
     const response = await fetch(
-      `${API_URL}/v${API_VERSION}/api/flights/${normalized}`,
+      `${API_URL}/flights/${normalized}`,
       { cache: "no-store" }
     );
 
