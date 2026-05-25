@@ -8,7 +8,7 @@ export const getFlightsQuerySchema = yup.object({
 
 export const bookFlightBodySchema = yup.object({
   session_id: yup.string().trim().required("Please provide a session ID."),
-  flight_number: yup.string().trim().required("Please provide a flight number."),
+  option_number: yup.number().required("Please provide an option number."),
   caller: yup.object({
     first_name: yup.string().trim().required("Please provide a first name."),
     last_name: yup.string().trim().required("Please provide a last name."),

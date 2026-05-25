@@ -100,7 +100,7 @@ export const getFlightsController = async (req, res) => {
 
 
 export const bookFlightController = async (req, res) => {
-  const { session_id, flight_number, caller } = req.body;
+  const { session_id, option_number, caller } = req.body;
   const firstName = caller?.first_name;
   const lastName = caller?.last_name;
   const email = caller?.email;
@@ -114,9 +114,9 @@ export const bookFlightController = async (req, res) => {
   }
 
   // Check if flight number is valid
-  const flight = cachedData?.data?.find((flight) => flight?.flightNumber?.toLowerCase() === flight_number?.toLowerCase());
+  const flight = cachedData?.data?.find((flight) => flight?.option_number === option_number);
   if (!flight) {
-    return res.status(404).json(customErrorHandler(INVALID_FLIGHT_NUMBER, "Sorry, the flight number you provided is not valid."));
+    return res.status(404).json(customErrorHandler(INVALID_FLIGHT_NUMBER, "Sorry, the option number you provided is not valid."));
   }
 
   // Generate Confirmation Number
