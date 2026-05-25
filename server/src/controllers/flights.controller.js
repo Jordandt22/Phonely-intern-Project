@@ -65,12 +65,14 @@ export const getFlightsController = async (req, res) => {
   }
 
   // Add Message to each flight for Phonely
-  const flightsWithMessage = flightsData.map((flight) => {
+  const flightsWithMessage = flightsData.map((flight, index) => {
     const departureTime = DateTime.fromISO(flight.departureTime).toLocal().toFormat("h:mm a ZZZZ");
     const arrivalTime = DateTime.fromISO(flight.arrivalTime).toLocal().toFormat("h:mm a ZZZZ");
+    const optionNumber = index + 1;
     return ({
       ...flight,
-      message: `Flight Number: ${flight.flightNumber}, Departure: ${departureTime}, Arrival: ${arrivalTime}, Airline: ${flight.airline}, Price: $${flight.price}`,
+      option_number: optionNumber,
+      message: `Option ${optionNumber}: Flight Number: ${flight.flightNumber}, Departure: ${departureTime}, Arrival: ${arrivalTime}, Airline: ${flight.airline}, Price: $${flight.price}`,
     })
   });
 
@@ -91,7 +93,7 @@ export const getFlightsController = async (req, res) => {
     dst: data?.dst,
     date: data?.date,
     flights: flightsWithMessage,
-    flights_phonely_message: flightsWithMessage.map((flight) => flight.message).join(" | "),
+    flights_phonely_message: flightsWithMessage.map((flight) => flight.message).join(", "),
     total_flights: flightsData.length,
   }));
 };
