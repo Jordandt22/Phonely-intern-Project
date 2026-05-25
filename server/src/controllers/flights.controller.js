@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
-import { FLIGHTS_NOT_FOUND, INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE } from "../lib/error.codes.js";
-import { customErrorHandler, successHandler } from "../lib/utils.js";
+import { FLIGHTS_NOT_FOUND, INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE, INVALID_FLIGHT_NUMBER } from "../lib/error.codes.js";
+import { customErrorHandler, successHandler, generateConfirmationNumber } from "../lib/utils.js";
 
 const parseTravelDate = (travelDateInput) => {
   const text = String(travelDateInput ?? "").trim().replace(/"/g, "");
@@ -48,7 +48,6 @@ export const getFlightsController = async (req, res) => {
     data = await response.json();
     flightsData = data?.flights;
   } catch (error) {
-    console.error(error);
     return res.status(500).json(customErrorHandler(INTERNAL_SERVER_ERROR, "Sorry, we aren't able to retrieve the flights at the moment. Please try again later."));
   }
 
@@ -81,3 +80,25 @@ export const getFlightsController = async (req, res) => {
     total_flights: flightsData.length,
   }));
 };
+
+
+export const bookFlightController = async (req, res) => {
+  const { flight_number, flights, caller } = req.body;
+  const firstName = caller?.first_name;
+  const lastName = caller?.last_name;
+  const email = caller?.email;
+  const phone = caller?.phone;
+
+  // Check if flight number is valid
+  const flight = flights.find((flight) => flight?.flightNumber?.toLowerCase() === flight_number?.toLowerCase());
+  if (!flight) {
+    return res.status(404).json(customErrorHandler(INVALID_FLIGHT_NUMBER, "Sorry, the flight number you provided is not valid."));
+  }
+
+  // Generate Confirmation Number
+  const confirmationNumber = generateConfirmationNumber();
+  return res.status(200).json(successHandler({
+    message: `Here is your confirmation number: ${confirmationNumber}. A copy will be sent to your email or phone number.`,
+    confirmation_number: confirmationNumber
+  }));
+}

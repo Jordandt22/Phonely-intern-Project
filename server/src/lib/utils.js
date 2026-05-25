@@ -45,3 +45,19 @@ export const serverErrorCatcherWrapper = (controller) => {
   };
 };
 
+export const generateConfirmationNumber = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const nums = "0123456789";
+
+  const pool = chars + nums;
+
+  let result = "CONF-";
+
+  for (let i = 0; i < 6; i++) {
+    result += pool.charAt(
+      Math.floor(Math.random() * pool.length)
+    );
+  }
+
+  return result;
+};
