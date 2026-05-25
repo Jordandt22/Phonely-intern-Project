@@ -8,6 +8,9 @@ import http from "http";
 // Routers
 import flightsRouter from "./routes/flights.route.js";
 
+// Middlewares
+import { arcjetMiddleware } from "./middlewares/arcjet.mw.js";
+
 // Express App
 const app = express();
 const { NODE_ENV, API_VERSION, PORT } = process.env;
@@ -19,11 +22,7 @@ if (NODE_ENV === "production") {
 
 // Security
 app.use(helmet());
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-  })
-);
+app.use(cors());
 
 // Body Parser
 app.use(express.urlencoded({ extended: false }));
@@ -42,6 +41,9 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
+
+// Arcjet Middleware
+app.use(arcjetMiddleware);
 
 // ---- API Routes ----
 

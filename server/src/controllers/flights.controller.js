@@ -80,6 +80,7 @@ export const getFlightsController = async (req, res) => {
   await cacheData(flightsCacheKey, flightsCacheInterval, flightsWithMessage);
 
   return res.status(200).json(successHandler({
+    message: "Here are the flights for the given departure and destination cities and travel date.",
     session_id,
     query: {
       departure_city,
@@ -120,6 +121,7 @@ export const bookFlightController = async (req, res) => {
   const confirmationNumber = generateConfirmationNumber();
   return res.status(200).json(successHandler({
     message: `Here is your confirmation number: ${confirmationNumber}. A copy will be sent to your email or phone number.`,
-    confirmation_number: confirmationNumber
+    confirmation_number: confirmationNumber,
+    selected_flight: flight,
   }));
 }
