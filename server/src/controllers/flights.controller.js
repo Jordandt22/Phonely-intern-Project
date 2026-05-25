@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE } from "../lib/error.codes.js";
+import { FLIGHTS_NOT_FOUND, INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE } from "../lib/error.codes.js";
 import { customErrorHandler, successHandler } from "../lib/utils.js";
 
 const parseTravelDate = (travelDateInput) => {
@@ -41,9 +41,21 @@ export const getFlightsController = async (req, res) => {
   }
 
   // Get Flights
-  const response = await fetch(`https://zz1mpoguje.execute-api.us-east-1.amazonaws.com/default/airline-assessment?src=${departure_city}&dst=${destination_city}&date=${parsedTravelDate.toISODate()}`);
-  const data = await response.json();
-  const flightsData = data?.flights;
+  let data;
+  let flightsData;
+  try {
+    const response = await fetch(`https://zz1mpoguje.execute-api.us-east-1.amazonaws.com/default/airline-assessment?src=${departure_city}&dst=${destination_city}&date=${parsedTravelDate.toISODate()}`);
+    data = await response.json();
+    flightsData = data?.flights;
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json(customErrorHandler(INTERNAL_SERVER_ERROR, "Sorry, we aren't able to retrieve the flights at the moment. Please try again later."));
+  }
+
+  // No Flights Found
+  if (!flightsData) {
+    return res.status(404).json(customErrorHandler(FLIGHTS_NOT_FOUND, "Sorry, there are no available flights for the given departure and destination cities and travel date."));
+  }
 
   // Add Message to each flight for Phonely
   const flightsWithMessage = flightsData.map((flight) => {
