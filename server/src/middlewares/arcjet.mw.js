@@ -19,7 +19,7 @@ const aj = arcjet({
     }),
     detectBot({
       mode: "LIVE",
-      allow: process.env.NODE_ENV === "development" ? ["POSTMAN"] : ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW", "CATEGORY:MONITOR"],
+      allow: process.env.NODE_ENV === "development" ? ["POSTMAN"] : ["CATEGORY:SEARCH_ENGINE", "CATEGORY:PREVIEW", "CATEGORY:MONITOR", "PYTHON_HTTPX"],
     }),
     tokenBucket({
       mode: "LIVE",
