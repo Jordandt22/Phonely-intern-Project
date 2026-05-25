@@ -3,7 +3,7 @@ import { FLIGHTS_NOT_FOUND, INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE } fro
 import { customErrorHandler, successHandler } from "../lib/utils.js";
 
 const parseTravelDate = (travelDateInput) => {
-  const text = String(travelDateInput ?? "").trim();
+  const text = String(travelDateInput ?? "").trim().replace(/"/g, "");
   if (!text) return null;
 
   const parseAttempts = [
@@ -68,7 +68,6 @@ export const getFlightsController = async (req, res) => {
   });
 
   return res.status(200).json(successHandler({
-    message: "Flight booked successfully",
     query: {
       departure_city,
       destination_city,

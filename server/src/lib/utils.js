@@ -12,6 +12,7 @@ export const customErrorHandler = (
   console.error(`${code}:`, message ?? "No message provided.");
   return {
     data: null,
+    message,
     error: {
       code,
       message,
