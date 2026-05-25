@@ -16,6 +16,7 @@ export const getRedisClient = () => {
 
 // Time Intervals
 const TEN_MINUTES = 60 * 10;
+const ONE_DAY = 60 * 60 * 24;
 
 // Check Key for Development
 export const checkKey = (key) =>
@@ -105,4 +106,9 @@ export const flushDBCache = async () => {
 export const getFlightsCacheKey = (session_id) => ({
   key: `FLIGHTS_SESSION:${session_id}`,
   interval: TEN_MINUTES,
+});
+
+export const getBookedFlightCacheKey = (confirmation_number) => ({
+  key: `BOOKED_FLIGHT:${confirmation_number.toUpperCase()}`,
+  interval: ONE_DAY,
 });

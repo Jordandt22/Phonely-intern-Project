@@ -2,13 +2,16 @@ import { DateTime } from "luxon";
 import { v4 as uuidv4 } from "uuid";
 
 // Error Codes
-import { FLIGHTS_NOT_FOUND, INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE, INVALID_FLIGHT_NUMBER } from "../lib/error.codes.js";
+import { FLIGHTS_NOT_FOUND, INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE, INVALID_FLIGHT_NUMBER, SUPABASE_ERROR, BOOKED_FLIGHT_NOT_FOUND } from "../lib/error.codes.js";
 
 // Utils
 import { customErrorHandler, successHandler, generateConfirmationNumber } from "../lib/utils.js";
 
 // Redis
-import { cacheData, getFlightsCacheKey, getCacheData } from "../lib/redis/redis.js";
+import { cacheData, getFlightsCacheKey, getBookedFlightCacheKey, getCacheData } from "../lib/redis/redis.js";
+
+// Supabase
+import { getSupabaseAuthClient } from "../lib/supabase/supabase.js";
 
 const parseTravelDate = (travelDateInput) => {
   const text = String(travelDateInput ?? "").trim().replace(/"/g, "");
@@ -41,6 +44,18 @@ const formatPrice = (price) => {
   return `$${Number(price).toFixed(2)}`;
 };
 
+const buildBookedFlightResponse = (confirmation_number, flight, caller) => ({
+  message: "Here are the details for your booked flight.",
+  confirmation_number: `CONF-${confirmation_number}`,
+  flight: {
+    ...flight,
+    departureTime: formatTime(flight.departureTime),
+    arrivalTime: formatTime(flight.arrivalTime),
+    price: formatPrice(flight.price),
+  },
+  caller,
+});
+
 export const getFlightsController = async (req, res) => {
   const { departure_city, destination_city, travel_date } = req.query;
 
@@ -59,12 +74,14 @@ export const getFlightsController = async (req, res) => {
   // Get Flights
   let data;
   let flightsData;
+  let flightDate;
   try {
     const response = await fetch(`https://zz1mpoguje.execute-api.us-east-1.amazonaws.com/default/airline-assessment?src=${departure_city}&dst=${destination_city}&date=${parsedTravelDate.toISODate()}`);
     data = await response.json();
     flightsData = data?.flights;
+    flightDate = data?.date;
   } catch (error) {
-    return res.status(500).json(customErrorHandler(INTERNAL_SERVER_ERROR, "Sorry, we aren't able to retrieve the flights at the moment. Please try again later."));
+    return res.status(500).json(customErrorHandler(INTERNAL_SERVER_ERROR, "Sorry, we weren't able to retrieve the flights at the moment. Please try again later."));
   }
 
   // No Flights Found
@@ -79,6 +96,7 @@ export const getFlightsController = async (req, res) => {
     const optionNumber = index + 1;
     return ({
       ...flight,
+      date: flightDate,
       option_number: optionNumber,
       message: `Option ${optionNumber}: Flight Number: ${flight.flightNumber}, Departure: ${departureTime}, Arrival: ${arrivalTime}, Airline: ${flight.airline}, Price: ${formatPrice(flight.price)}`,
     })
@@ -99,7 +117,7 @@ export const getFlightsController = async (req, res) => {
     },
     src: data?.src,
     dst: data?.dst,
-    date: data?.date,
+    date: flightDate,
     flights: flightsWithMessage,
     flights_phonely_message: flightsWithMessage.map((flight) => flight.message).join(", "),
     total_flights: flightsData.length,
@@ -109,10 +127,6 @@ export const getFlightsController = async (req, res) => {
 
 export const bookFlightController = async (req, res) => {
   const { session_id, option_number, caller } = req.body;
-  const firstName = caller?.first_name;
-  const lastName = caller?.last_name;
-  const email = caller?.email;
-  const phone = caller?.phone;
 
   // Get Flights from Cache
   const { key: flightsCacheKey } = getFlightsCacheKey(session_id);
@@ -128,10 +142,30 @@ export const bookFlightController = async (req, res) => {
   }
 
   // Generate Confirmation Number
-  const confirmationNumber = generateConfirmationNumber();
+  const confirmation_number = generateConfirmationNumber();
+  const confirmationCode = confirmation_number.replace(/^CONF-/ig, "");
+
+  // Store Flight Details in Supabase
+  try {
+    await getSupabaseAuthClient()
+      .from("booked_flights")
+      .insert({
+        confirmation_number: confirmationCode,
+        flight,
+        caller,
+      })
+      .single();
+  } catch (error) {
+    return res.status(500).json(customErrorHandler(SUPABASE_ERROR, "Sorry, we weren't able to store the flight details at the moment. Please try again later."));
+  }
+
+  // Cache Data
+  const { key: bookedFlightCacheKey, interval: bookedFlightCacheInterval } = getBookedFlightCacheKey(confirmationCode);
+  await cacheData(bookedFlightCacheKey, bookedFlightCacheInterval, { flight, caller });
+
   return res.status(200).json(successHandler({
-    message: `Here is your confirmation number: ${confirmationNumber}. A copy will be sent to your email or phone number.`,
-    confirmation_number: confirmationNumber,
+    message: `Here is your confirmation number: ${confirmation_number}. A copy will be sent to your email or phone number.`,
+    confirmation_number,
     selected_flight: {
       ...flight,
       departureTime: formatTime(flight.departureTime),
@@ -139,4 +173,37 @@ export const bookFlightController = async (req, res) => {
       price: formatPrice(flight.price),
     },
   }));
+};
+
+export const getBookedFlightController = async (req, res) => {
+  const confirmation_number = req.params.confirmation_number
+    .trim()
+    .replace(/^CONF-/ig, "")
+    .toUpperCase();
+
+  // Checking cache for data
+  const { key: bookedFlightCacheKey } = getBookedFlightCacheKey(confirmation_number);
+  const cachedData = await getCacheData(bookedFlightCacheKey);
+  if (cachedData?.data) {
+    const { flight, caller } = cachedData.data;
+    return res.status(200).json(successHandler(buildBookedFlightResponse(confirmation_number, flight, caller)));
+  }
+
+  // Getting data from Supabase
+  const { data, error } = await getSupabaseAuthClient()
+    .from("booked_flights")
+    .select("flight, caller")
+    .eq("confirmation_number", confirmation_number)
+    .maybeSingle();
+
+  if (error) {
+    return res.status(500).json(customErrorHandler(SUPABASE_ERROR, "Sorry, we weren't able to retrieve the flight details at the moment. Please try again later."));
+  }
+
+  if (!data) {
+    return res.status(404).json(customErrorHandler(BOOKED_FLIGHT_NOT_FOUND, "Sorry, no booking was found for the confirmation number you provided."));
+  }
+
+  const { flight, caller } = data;
+  return res.status(200).json(successHandler(buildBookedFlightResponse(confirmation_number, flight, caller)));
 };

@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { getFlightsController, bookFlightController } from "../controllers/flights.controller.js";
-import { queryValidator, bodyValidator } from "../middlewares/validators.js";
-import { getFlightsQuerySchema, bookFlightBodySchema } from "../lib/schemas.js";
+import { getFlightsController, bookFlightController, getBookedFlightController } from "../controllers/flights.controller.js";
+import { queryValidator, bodyValidator, paramsValidator } from "../middlewares/validators.js";
+import { getFlightsQuerySchema, bookFlightBodySchema, getBookedFlightParamsSchema } from "../lib/schemas.js";
 import { serverErrorCatcherWrapper } from "../lib/utils.js";
 
 const flightsRouter = Router();
@@ -16,6 +16,12 @@ flightsRouter.post(
   "/book",
   bodyValidator(bookFlightBodySchema),
   serverErrorCatcherWrapper(bookFlightController),
+);
+
+flightsRouter.get(
+  "/:confirmation_number",
+  paramsValidator(getBookedFlightParamsSchema),
+  serverErrorCatcherWrapper(getBookedFlightController),
 );
 
 

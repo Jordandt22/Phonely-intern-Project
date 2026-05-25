@@ -16,3 +16,16 @@ export const bookFlightBodySchema = yup.object({
     phone: yup.string().trim().required("Please provide a phone number."),
   }).required("Please provide caller information."),
 });
+
+export const getBookedFlightParamsSchema = yup.object({
+  confirmation_number: yup
+    .string()
+    .trim()
+    .transform((value) => value?.replace(/^CONF-/i, "").toUpperCase())
+    .required("Please provide a confirmation number.")
+    .length(6, "Confirmation number must be exactly 6 characters.")
+    .matches(
+      /^[A-Z0-9]+$/,
+      "Confirmation number can only contain letters and numbers."
+    ),
+});
