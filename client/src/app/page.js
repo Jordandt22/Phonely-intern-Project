@@ -51,6 +51,12 @@ export default function Home() {
           <Search className="size-4" />
           Search
         </button>
+        <div className="flex flex-col items-center justify-center gap-1 mt-4">
+          <p className="text-white text-center font-medium">To book a flight, call us at:</p>
+          <a href="tel:+12096516159" className="text-white/50 text-center text-sm hover:text-white/75 transition-colors">
+            +1 (209) 651-6159
+          </a>
+        </div>
       </form>
     </div>
   );
