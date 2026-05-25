@@ -1,6 +1,14 @@
 import { DateTime } from "luxon";
+import { v4 as uuidv4 } from "uuid";
+
+// Error Codes
 import { FLIGHTS_NOT_FOUND, INVALID_TRAVEL_DATE, INVALID_TRAVEL_DATE_RANGE, INVALID_FLIGHT_NUMBER } from "../lib/error.codes.js";
+
+// Utils
 import { customErrorHandler, successHandler, generateConfirmationNumber } from "../lib/utils.js";
+
+// Redis
+import { cacheData, getFlightsCacheKey, getCacheData } from "../lib/redis/redis.js";
 
 const parseTravelDate = (travelDateInput) => {
   const text = String(travelDateInput ?? "").trim().replace(/"/g, "");
@@ -66,7 +74,13 @@ export const getFlightsController = async (req, res) => {
     })
   });
 
+  // Cache Flights
+  const session_id = uuidv4();
+  const { key: flightsCacheKey, interval: flightsCacheInterval } = getFlightsCacheKey(session_id);
+  await cacheData(flightsCacheKey, flightsCacheInterval, flightsWithMessage);
+
   return res.status(200).json(successHandler({
+    session_id,
     query: {
       departure_city,
       destination_city,
@@ -83,14 +97,21 @@ export const getFlightsController = async (req, res) => {
 
 
 export const bookFlightController = async (req, res) => {
-  const { flight_number, flights, caller } = req.body;
+  const { session_id, flight_number, caller } = req.body;
   const firstName = caller?.first_name;
   const lastName = caller?.last_name;
   const email = caller?.email;
   const phone = caller?.phone;
 
+  // Get Flights from Cache
+  const { key: flightsCacheKey } = getFlightsCacheKey(session_id);
+  const cachedData = await getCacheData(flightsCacheKey);
+  if (!cachedData) {
+    return res.status(404).json(customErrorHandler(FLIGHTS_NOT_FOUND, "Sorry, the session ID you provided is not valid."));
+  }
+
   // Check if flight number is valid
-  const flight = flights.find((flight) => flight?.flightNumber?.toLowerCase() === flight_number?.toLowerCase());
+  const flight = cachedData?.data?.find((flight) => flight?.flightNumber?.toLowerCase() === flight_number?.toLowerCase());
   if (!flight) {
     return res.status(404).json(customErrorHandler(INVALID_FLIGHT_NUMBER, "Sorry, the flight number you provided is not valid."));
   }

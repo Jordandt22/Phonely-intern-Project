@@ -7,14 +7,8 @@ export const getFlightsQuerySchema = yup.object({
 });
 
 export const bookFlightBodySchema = yup.object({
+  session_id: yup.string().trim().required("Please provide a session ID."),
   flight_number: yup.string().trim().required("Please provide a flight number."),
-  flights: yup.array().of(yup.object({
-    flightNumber: yup.string().trim().required("Please provide a flight number."),
-    departureTime: yup.string().trim().required("Please provide a departure time."),
-    arrivalTime: yup.string().trim().required("Please provide an arrival time."),
-    airline: yup.string().trim().required("Please provide an airline."),
-    price: yup.number().required("Please provide a price."),
-  })).required("Please provide flights information."),
   caller: yup.object({
     first_name: yup.string().trim().required("Please provide a first name."),
     last_name: yup.string().trim().required("Please provide a last name."),
